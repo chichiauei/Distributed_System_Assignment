@@ -53,16 +53,35 @@ public class Main {
         }
     }
 
+    private static void printPostLatencyStats(BlockingDeque<Long> postLatencies) {
+        long min = Long.MAX_VALUE;
+        long max = Long.MIN_VALUE;
+        long sum = 0;
+
+        for (long latency : postLatencies) {
+            min = Math.min(min, latency);
+            max = Math.max(max, latency);
+            sum += latency;
+        }
+
+        double mean = (double) sum / postLatencies.size();
+
+        System.out.println("Min latency for doGET: " + min + " milliseconds.");
+        System.out.println("Mean latency for doGET: " + mean + " milliseconds.");
+        System.out.println("Max latency for doGET: " + max + " milliseconds.");
+    }
+
 
 //    http://localhost:8080/
 //    http://52.33.79.11:8080/Server_war
 
     public static void main(String[] args) throws InterruptedException {
 
-        final int NUM_THREADS = 20;
+        final int NUM_THREADS = 200;
         final String filePath = "C:\\Users\\chich\\OneDrive\\Desktop\\6650 A1\\Client2\\records.csv";
         final String filePathExcel = "C:\\Users\\chich\\OneDrive\\Desktop\\6650 A1\\Client2\\plot.xlsx";
-        final String BASE_URL = "http://35.90.11.11:8080/Server_war";
+        final String BASE_URL = "http://localhost:8080/Server_war_exploded";
+
         final RequestCounter counter = new RequestCounter();
         completed = new CountDownLatch(NUM_THREADS);
 
@@ -70,16 +89,17 @@ public class Main {
         BlockingDeque<Record> requestRecords = new LinkedBlockingDeque<>();
         BlockingDeque<Long> responseTimes = new LinkedBlockingDeque<>();
         BlockingDeque<Double> throughputList = new LinkedBlockingDeque<>();
+        BlockingDeque<Long> postLatencies = new LinkedBlockingDeque<>();
 
         Instant start = Instant.now();
         for (int i = 0; i < NUM_THREADS; i++) {
-            Client client = new Client(BASE_URL,requestRecords);
+            Client client = new Client(BASE_URL,requestRecords,postLatencies);
             Thread thread = new Thread(client);
             thread.start();
             counter.inc();
         }
         completed.await();
-        CsvExporter.exportToCsv(requestRecords, filePath);
+//        CsvExporter.exportToCsv(requestRecords, filePath);
 
         Instant end = Instant.now();
         Duration timeElapsed = Duration.between(start, end);
@@ -103,7 +123,7 @@ public class Main {
 
 
 
-        writeToExcel(filePathExcel,throughputList);
+//        writeToExcel(filePathExcel,throughputList);
 
 
 
@@ -142,5 +162,6 @@ public class Main {
         System.out.println("The p99 Response Time is " + p99ResponseTime + " milliseconds.");
         System.out.println("The Min Response Time is " + minResponseTime + " milliseconds.");
         System.out.println("The Max Response Time is " + maxResponseTime + " milliseconds.");
+        printPostLatencyStats(postLatencies);
     }
 }

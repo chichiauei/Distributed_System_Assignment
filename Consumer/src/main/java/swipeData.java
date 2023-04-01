@@ -5,6 +5,11 @@ public class swipeData {
     protected String swipee;
     protected String comment;
 
+    public swipeData( String swiper,String swipee, String swipe) {
+        this.swiper = swiper;
+        this.swipee = swipee;
+        this.swipe = swipe;
+    }
 
     public swipeData( String swipe,String swiper, String swipee, String comment) {
         this.swipe = swipe;

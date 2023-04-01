@@ -4,17 +4,25 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 
 import java.io.IOException;
+
+import java.nio.charset.StandardCharsets;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Consumer {
     private final static String QUEUE_NAME = "my_queue";
-    private final static String HOST_NAME = "35.90.11.11";
-    private final static int numThreads = 20;
+    //52.36.77.145
+    private final static String HOST_NAME = "localhost";
+    private final static int numThreads = 100;
     private static final ConcurrentHashMap<String, BlockingDeque<String>> matches = new ConcurrentHashMap<>();
 
-
+//    private static String url = "jdbc:mysql://database-2.cmluuqszwcgn.us-west-2.rds.amazonaws.com:3306/sys?user=admin&password=admin123";
+//    private static String username = "admin";
+//    private static String password = "admin123";
     public static void main(String[] args) throws IOException, TimeoutException, InterruptedException {
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost(HOST_NAME);
@@ -30,7 +38,8 @@ public class Consumer {
             executor.submit(() -> {
                 try {
                     channel.basicConsume(QUEUE_NAME, true, (consumerTag, delivery) -> {
-                        String message = new String(delivery.getBody(), "UTF-8");
+                        String message = new String(delivery.getBody(), StandardCharsets.UTF_8);
+//                        System.out.println(message);
                         handleMessage(message);
                     }, consumerTag -> {});
                 } catch (Exception e) {
@@ -54,10 +63,12 @@ public class Consumer {
             // Return User object
             Gson gson = new Gson();
             swipeData data = (swipeData) gson.fromJson(message, swipeData.class);
+            ConsumerDao consumerDao = new ConsumerDao();
+            consumerDao.createSwipeData(new swipeData(data.getSwiper(), data.getSwipee(), data.getSwipe()));
             return data;
         }
 
-        private static void updateMap(swipeData data) {
+        private static <PreparedStatement> void updateMap(swipeData data) {
             // Update userMap based on user object
             // Thread-safe operations should be used
 
@@ -73,10 +84,29 @@ public class Consumer {
             else{
                 if(data.getSwipe() == "right"){
                     matches.get(id).push(data.getSwipee());
+
+
+
                 }
-
             }
-
+//            if(matches.get(id).size() < 100){
+//                if(Objects.equals(data.getSwipe(), "right")){
+//                    matches.get(id).push(data.getSwipee());
+//                    try (java.sql.Connection conn = DriverManager.getConnection(url, username, password)) {
+//                            String sql = "INSERT INTO matches (id, `match`) VALUES (?, ?)";
+//                            java.sql.PreparedStatement stmt = conn.prepareStatement(sql);
+//
+//                        stmt.setString(1, id);
+//                        for (String match : matches.get(id)) {
+//                            stmt.setString(2, match);
+//                            stmt.executeUpdate();
+//                        }
+//                        stmt.close();
+//                    } catch (Exception e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }
         }
 }
 
